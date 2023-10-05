@@ -207,7 +207,7 @@ def convert_vmf_to_obj(vmf_content):
                     vx, vy, vz, v_shift, v_tex_scale = map(float, v_match)
 
                 u = (vert_x * ux + vert_y * uy + vert_z * uz) / texel_dencity_units + u_shift / texel_dencity_tex
-                v = -(vert_x * vx + vert_y * vy + vert_z * vz) / texel_dencity_units + v_shift / texel_dencity_tex
+                v = -((vert_x * vx + vert_y * vy + vert_z * vz) / texel_dencity_units + v_shift / texel_dencity_tex)
                 
                 converted_solid += f'vt {u} {v}\n'
                 
