@@ -13,7 +13,8 @@ from collections import defaultdict
 #
 # Features:
 # - geometry;
-# - UV (only for same texel);
+# - UV for default texture resolution;
+# - UV for different texels (only if VTF founded);
 # - materials names;
 # - meshes are grouped by materials;
 # - optional removing geometry with NODRAW material.
@@ -23,7 +24,6 @@ from collections import defaultdict
 # - smoothing groups;
 # - extra vertices weld;
 # - hierarchy and naming polishing;
-# - maybe awesome UV convert for different texels (idk how to do this but i want).
 #
 
 # Global vars
@@ -188,25 +188,6 @@ def get_vtf_path(side_content, vmf_path):
             #log_and_print(f"vtf_path: {vtf_path}\n")
     else:
         return None
-        
-    
-    #log_and_print(f"vmt_path: {vmt_path}\n")
-    
-    #log_and_print(f"materials_path: {materials_path}\n")
-    
-    #log_and_print(f"gameinfo_path: {gameinfo_path}\n")
-    
-    #log_and_print(f"mat_path_raw: {mat_path_raw}\n")
-    
-    #log_and_print(f"vmf_path: {vmf_path}\n")
-    
-    #log_and_print(f"test: {os.path.dirname(os.path.dirname(vmf_path))}\n")
-    
-    #vtf_path = "test/"mat_path_raw
-    
-    #log_and_print(f"vtf_path:\n{vtf_path}\n")
-    
-    #return vtf_path
 
 def get_vtf_resolution(file_path):
     if file_path is None:
@@ -273,7 +254,21 @@ def convert_vmf_to_obj(vmf_content, vmf_path):
             
             vtf_path = get_vtf_path(side, vmf_path)
             
-            log_and_print(f'vtf resolutions: {get_vtf_resolution(vtf_path)}')
+            vtf_resolution = get_vtf_resolution(vtf_path)
+            if vtf_resolution is not None:
+                vtf_width, vtf_height = get_vtf_resolution(vtf_path)
+                u_tex = vtf_width
+                v_tex = vtf_height
+            else: 
+                vtf_width, vtf_height = None, None
+                u_tex = texel_dencity_tex
+                v_tex = texel_dencity_tex
+            
+            #log_and_print(f'u_tex: {u_tex}')
+            #log_and_print(f'v_tex: {u_tex}')
+            
+            #log_and_print(f'vtf_width: {vtf_width}')
+            #log_and_print(f'vtf_height: {vtf_height}')
     
             for vert_x, vert_y, vert_z in vertices:
                 vertex_index += 1
@@ -288,8 +283,8 @@ def convert_vmf_to_obj(vmf_content, vmf_path):
                 if v_match:
                     vx, vy, vz, v_shift, v_tex_scale = map(float, v_match)
 
-                u = (vert_x * ux + vert_y * uy + vert_z * uz) / texel_dencity_units + u_shift / texel_dencity_tex
-                v = -((vert_x * vx + vert_y * vy + vert_z * vz) / texel_dencity_units + v_shift / texel_dencity_tex)
+                u = ((vert_x * ux + vert_y * uy + vert_z * uz) / texel_dencity_units + u_shift / texel_dencity_tex) * texel_dencity_tex / u_tex
+                v = -((vert_x * vx + vert_y * vy + vert_z * vz) / texel_dencity_units + v_shift / texel_dencity_tex) * texel_dencity_tex / v_tex
                 
                 converted_solid += f'vt {u} {v}\n'
                 
@@ -392,6 +387,8 @@ try:
         # Close log file because we are decent dudes
         LOG_FILE.close()
 except Exception as e:
+    import traceback
     print(f"An error occurred: {e}")
+    print(traceback.format_exc())
 finally:
     input("\nPress Enter to exit...")
