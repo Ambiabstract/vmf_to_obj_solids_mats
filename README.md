@@ -1,5 +1,5 @@
 # vmf_to_obj_solids_mats
-Shitty VMF to OBJ converter script. Converts only solid (brush) geometry; objects in OBJ are grouped by materials (optional).
+Shitty VMF to OBJ converter (Python script). Converts only solid (brush) geometry; objects in OBJ are grouped by materials (optional).
 
 Comparison:
 ![изображение](https://github.com/Ambiabstract/vmf_to_obj_solids_mats/assets/60753651/ae041af9-576a-4290-8353-d913b3101e8a)
