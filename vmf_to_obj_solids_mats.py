@@ -147,7 +147,83 @@ def extract_side_attributes(side_content):
     
     return plane, material, uaxis, vaxis
 
-def convert_vmf_to_obj(vmf_content):
+def get_vtf_path(side_content, vmf_path):
+    mat_path_re = re.compile(r'"material"\s+"([^"]+)"', re.DOTALL)
+
+    mat_path_match = mat_path_re.search(side_content)
+    
+    mat_path_raw = mat_path_match.group(1) if mat_path_match else None
+   
+    gameinfo_path = None
+    
+    for dirpath, dirnames, filenames in os.walk(os.path.dirname(os.path.dirname(vmf_path))):
+        #log_and_print(f"dirpath: {dirpath}\n")
+        if "gameinfo.txt" in filenames:
+            gameinfo_path = os.path.join(dirpath)
+            break
+            
+    materials_path = gameinfo_path + "/materials"
+    
+    vmt_path = materials_path + "/" + mat_path_raw + ".vmt"
+    
+    if os.path.exists(vmt_path):
+        with open(vmt_path, 'r') as file:
+            vmt_content = file.read()
+        
+        vtf_pattern = r'\$basetexture\s+"[^"]+/([^"/]+)"'
+        vtf_match = re.search(vtf_pattern, vmt_content, re.IGNORECASE)
+        if vtf_match:
+            vtf_name = vtf_match.group(1)
+        
+        vtf_raw_path_pattern = r'\$basetexture\s+"([^"]+)"'
+        vtf_raw_path_match = re.search(vtf_raw_path_pattern, vmt_content, re.IGNORECASE)
+        if vtf_raw_path_match:
+            vtf_raw_path = vtf_raw_path_match.group(1)
+        
+            vtf_path = materials_path + "/" + vtf_raw_path + ".vtf"
+            
+        return vtf_path
+        
+            #log_and_print(f"vtf_path: {vtf_path}\n")
+        
+        
+    
+    #log_and_print(f"vmt_path: {vmt_path}\n")
+    
+    #log_and_print(f"materials_path: {materials_path}\n")
+    
+    #log_and_print(f"gameinfo_path: {gameinfo_path}\n")
+    
+    #log_and_print(f"mat_path_raw: {mat_path_raw}\n")
+    
+    #log_and_print(f"vmf_path: {vmf_path}\n")
+    
+    #log_and_print(f"test: {os.path.dirname(os.path.dirname(vmf_path))}\n")
+    
+    #vtf_path = "test/"mat_path_raw
+    
+    #log_and_print(f"vtf_path:\n{vtf_path}\n")
+    
+    #return vtf_path
+
+def get_vtf_resolution(file_path):
+    if file_path is None:
+        return None
+
+    try:
+        with open(file_path, 'rb') as f:
+            vtf_buffer = f.read()
+    except Exception as e:
+        return f"An error occurred: {e}"
+
+    # Extracting the width and height from the buffer
+    # According to the VTF header structure, width and height are at 16-byte and 18-byte offsets (unsigned short)
+    width = int.from_bytes(vtf_buffer[16:18], 'little')
+    height = int.from_bytes(vtf_buffer[18:20], 'little')
+    
+    return (width, height)
+
+def convert_vmf_to_obj(vmf_content, vmf_path):
     log_and_print(f"Start convert_vmf_to_obj...\n")
     obj_data = "".join(f'#\n# Atmus OBJ\n#\n\n')
     solid_contents = extract_solids_from_vmf(vmf_content)
@@ -192,6 +268,10 @@ def convert_vmf_to_obj(vmf_content):
             
             vertices = extract_vertices_from_side(side)
             plane, material, uaxis, vaxis = extract_side_attributes(side)
+            
+            vtf_path = get_vtf_path(side, vmf_path)
+            
+            log_and_print(f'vtf resolutions: {get_vtf_resolution(vtf_path)}')
     
             for vert_x, vert_y, vert_z in vertices:
                 vertex_index += 1
@@ -287,14 +367,15 @@ def merge_and_filter_objects_by_material_inplace(obj_file_path, materials_to_rem
     
 def main():
     # Assuming the VMF files are dragged onto the script
-    for arg in sys.argv[1:]:
-        if arg.lower().endswith('.vmf'):
-            with open(arg, 'r') as f:
+    for vmf_path in sys.argv[1:]:
+        #log_and_print(f'vmf_path: {vmf_path}')
+        if vmf_path.lower().endswith('.vmf'):
+            with open(vmf_path, 'r') as f:
                 vmf_content = f.read()
-            obj_content = convert_vmf_to_obj(vmf_content)
+            obj_content = convert_vmf_to_obj(vmf_content, vmf_path)
             
             # Save the OBJ content to a file in the same directory as the VMF file
-            obj_file_path = os.path.join(os.path.dirname(arg), f"{os.path.splitext(os.path.basename(arg))[0]}.obj")
+            obj_file_path = os.path.join(os.path.dirname(vmf_path), f"{os.path.splitext(os.path.basename(vmf_path))[0]}.obj")
             with open(obj_file_path, 'w') as f:
                 f.write(obj_content)
             
