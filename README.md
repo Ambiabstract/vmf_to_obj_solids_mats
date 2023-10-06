@@ -2,8 +2,8 @@
 Shitty VMF to OBJ converter script. Converts only solid (brush) geometry; objects in OBJ are grouped by materials (optional).
 
 Comparison:
-![изображение](https://github.com/Ambiabstract/vmf_to_obj_solids_mats/assets/60753651/7464d70d-8929-4630-87b9-1e1c48ce1ff7)
-![изображение](https://github.com/Ambiabstract/vmf_to_obj_solids_mats/assets/60753651/38f29626-b3c8-47ef-88b6-53a4fabe1e91)
+![изображение](https://github.com/Ambiabstract/vmf_to_obj_solids_mats/assets/60753651/ae041af9-576a-4290-8353-d913b3101e8a)
+![изображение](https://github.com/Ambiabstract/vmf_to_obj_solids_mats/assets/60753651/87f51dde-245b-4db1-bcbc-919e5e06d995)
 ![изображение](https://github.com/Ambiabstract/vmf_to_obj_solids_mats/assets/60753651/ca90bc4b-d125-487f-a57c-4c3de1145294)
 ![изображение](https://github.com/Ambiabstract/vmf_to_obj_solids_mats/assets/60753651/01b1ec7e-f285-4a9e-8942-9a1ff4f50653)
 
