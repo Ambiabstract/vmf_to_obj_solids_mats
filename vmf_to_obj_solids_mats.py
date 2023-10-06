@@ -155,6 +155,7 @@ def get_vtf_path(side_content, vmf_path):
     mat_path_raw = mat_path_match.group(1) if mat_path_match else None
    
     gameinfo_path = None
+    vtf_path = None
     
     for dirpath, dirnames, filenames in os.walk(os.path.dirname(os.path.dirname(vmf_path))):
         #log_and_print(f"dirpath: {dirpath}\n")
@@ -185,7 +186,8 @@ def get_vtf_path(side_content, vmf_path):
         return vtf_path
         
             #log_and_print(f"vtf_path: {vtf_path}\n")
-        
+    else:
+        return None
         
     
     #log_and_print(f"vmt_path: {vmt_path}\n")
