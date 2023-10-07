@@ -3,6 +3,8 @@ import os
 import sys
 import shutil
 from collections import defaultdict
+import numpy as np
+from numpy.linalg import lstsq
 
 #
 # Unfinished shitty VMF to OBJ converter script. Converts only solid (brush) geometry;
@@ -16,12 +18,13 @@ from collections import defaultdict
 # - UV for default texture resolution;
 # - UV for different texels (only if VTF founded);
 # - materials names;
-# - meshes are grouped by materials;
+# - meshes are grouped by materials (optional);
+# - vertex normals from sides (no smoothing yet);
 # - optional removing geometry with NODRAW material.
 #
 # TODO:
-# - vertex normals;
 # - smoothing groups;
+# - optimization (removal of identical values);
 # - extra vertices weld;
 # - hierarchy and naming polishing;
 #
@@ -206,6 +209,34 @@ def get_vtf_resolution(file_path):
     
     return (width, height)
 
+def find_plane_normal_from_list(vertices):
+    """
+    Finds the exact normal vector of the plane defined by the given vertices.
+    
+    Parameters:
+        vertices (list): A list of tuples containing at least 3 points in 3D space that define a plane.
+        
+    Returns:
+        normal (ndarray): A 1 x 3 numpy array containing the components of the normal vector.
+    """
+    # Convert the list of tuples to a numpy array
+    points = np.array(vertices)
+    
+    # Take the first three vertices to define two vectors on the plane
+    A, B, C = points[0], points[1], points[2]
+    
+    # Calculate the vectors AB and AC
+    AB = B - A
+    AC = C - A
+    
+    # Calculate the cross product of AB and AC to get the normal vector
+    normal = np.cross(AB, AC)
+    
+    # Normalize the normal vector
+    normal = normal / np.linalg.norm(normal)
+    
+    return normal
+
 def convert_vmf_to_obj(vmf_content, vmf_path):
     log_and_print(f"Start convert_vmf_to_obj...\n")
     obj_data = "".join(f'#\n# Atmus OBJ\n#\n\n')
@@ -288,8 +319,8 @@ def convert_vmf_to_obj(vmf_content, vmf_path):
                 
                 converted_solid += f'vt {u} {v}\n'
                 
-            
-            converted_solid += f'vn 0.5774 0.5774 -0.5774\n'    # temp normals
+                nx, ny, nz = find_plane_normal_from_list(vertices)
+                converted_solid += f'vn {nx} {nz} {-ny} \n'
             
             converted_solid += f'usemtl {material}\n'           # materials per side
             
@@ -302,8 +333,8 @@ def convert_vmf_to_obj(vmf_content, vmf_path):
             # Faces generation
             converted_solid += f'f '
             for i in range(len(vertices)):
-                converted_solid += f'{vertex_index-len(vertices)+i+1}/{vertex_index-len(vertices)+i+1} '
-            converted_solid += f'\n'        
+                converted_solid += f'{vertex_index-len(vertices)+i+1}/{vertex_index-len(vertices)+i+1}/{vertex_index-len(vertices)+i+1} '
+            converted_solid += f'\n'
             
         converted_data = converted_solid
         
