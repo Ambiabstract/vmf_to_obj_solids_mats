@@ -15,11 +15,12 @@ Features:
 - UV for default texture resolution;
 - UV for different texels (only if VTF founded);
 - materials names;
-- meshes are grouped by materials;
+- meshes are grouped by materials (optional);
+- vertex normals from sides (no smoothing yet);
 - optional removing geometry with NODRAW material.
 
 TODO:
-- fix vertex normals;
-- fix smoothing groups;
+- smoothing groups;
+- optimization (removal of identical values);
 - extra vertices weld;
-- hierarchy and naming polishing.
+- hierarchy and naming polishing;
