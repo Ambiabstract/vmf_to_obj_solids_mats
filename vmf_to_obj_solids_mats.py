@@ -149,6 +149,18 @@ def extract_side_attributes(side_content):
     log_and_print(f"UVs:\n{uaxis}\n{vaxis}\n")
     
     return plane, material, uaxis, vaxis
+    
+# Function to extract smoothing group from a 'side' block content
+def extract_smoothing_group(side_content):
+    sg_re = re.compile(r'"smoothing_groups"\s+"([^"]+)"', re.DOTALL)
+    
+    sg_match = sg_re.search(side_content)
+    
+    sg = sg_match.group(1) if sg_match else None
+    
+    log_and_print(f"smoothing_group:\n{sg}\n")
+    
+    return sg
 
 def get_vtf_path(side_content, vmf_path):
     mat_path_re = re.compile(r'"material"\s+"([^"]+)"', re.DOTALL)
@@ -324,7 +336,11 @@ def convert_vmf_to_obj(vmf_content, vmf_path):
             
             converted_solid += f'usemtl {material}\n'           # materials per side
             
-            converted_solid += f's off\n'                       # temp smoothing groups
+            sg = extract_smoothing_group(side)
+            
+            converted_solid += f's {sg}\n'
+            
+            #converted_solid += f's off\n'                       # temp smoothing groups
             #converted_solid += f's 1\n'                        # temp smoothing groups
 
             converted_solid += f'o Side_{tripled_side_id}\n'    # temp object
@@ -350,8 +366,9 @@ def convert_vmf_to_obj(vmf_content, vmf_path):
 def merge_and_filter_objects_by_material_inplace(obj_file_path, materials_to_remove=None):
     temp_file_path = obj_file_path + '.tmp'
     
-    material_to_faces = defaultdict(list)
+    material_to_faces_and_smoothing_groups = defaultdict(list)
     current_material = None
+    current_smoothing_group = None
     
     vertices = []
     texture_coords = []
@@ -366,9 +383,11 @@ def merge_and_filter_objects_by_material_inplace(obj_file_path, materials_to_rem
             line = line.strip()
             if line.startswith('usemtl'):
                 current_material = line.split()[1]
+            elif line.startswith('s '):
+                current_smoothing_group = line
             elif line.startswith('f'):
                 if current_material is not None and current_material not in materials_to_remove:
-                    material_to_faces[current_material].append(line)
+                    material_to_faces_and_smoothing_groups[current_material].append((current_smoothing_group, line))
             elif line.startswith('v '):
                 vertices.append(line)
             elif line.startswith('vt '):
@@ -384,10 +403,14 @@ def merge_and_filter_objects_by_material_inplace(obj_file_path, materials_to_rem
         outfile.write('\n'.join(normals) + '\n')
         
         # Write grouped faces by material
-        for material, faces in material_to_faces.items():
+        for material, faces_and_smoothing_groups in material_to_faces_and_smoothing_groups.items():
             outfile.write(f'g {material}\n')
             outfile.write(f'usemtl {material}\n')
-            for face in faces:
+            last_smoothing_group = None
+            for smoothing_group, face in faces_and_smoothing_groups:
+                if smoothing_group != last_smoothing_group:
+                    outfile.write(smoothing_group + '\n')
+                    last_smoothing_group = smoothing_group
                 outfile.write(face + '\n')
                 
     # Replace the original OBJ file with the new content
