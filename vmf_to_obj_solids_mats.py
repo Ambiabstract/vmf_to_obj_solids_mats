@@ -483,6 +483,132 @@ def optimize_vertexes(obj_file_path: str, remove_vn: Optional[bool] = False):
         for block in blocks:
             for line in block:
                 f.write(f'{line}\n')
+
+def find_smoothed_faces(file_path):
+    smoothed_faces = {}
+    current_s = '0'  # Initialize with a value that excludes non-smoothed faces
+    global_face_count = 0
+
+    with open(file_path, 'r') as f:
+        for line in f:
+            line = line.strip()
+            tokens = line.split()
+            if len(tokens) == 0:
+                continue
+
+            # Processing 's' string
+            if tokens[0] == 's':
+                current_s = tokens[1]
+            
+            # Processing 'f' string
+            elif tokens[0] == 'f':
+                global_face_count += 1
+                #log_and_print(f'\nglobal_face_count:{global_face_count}\n')
+                #log_and_print(f'\ncurrent_s:{current_s}\n')
+                
+                if current_s not in {'0', 'off'}:
+                    face_key = f'f_{global_face_count}'
+                    face_vertices = []
+                    for face_data in tokens[1:]:
+                        v_index, vt_index, vn_index = map(int, face_data.split('/'))
+                        face_vertex = [v_index, vt_index, vn_index]
+                        face_vertices.append(face_vertex)
+                    smoothed_faces[face_key] = face_vertices
+
+    return smoothed_faces
+
+# Smoothing groups to vertex normals
+def sg_to_vn(obj_file_path):
+    smoothed_faces = find_smoothed_faces(obj_file_path) # Vocab with faces and vertexes
+    
+    smoothed_vertices = {}
+    
+    #log_and_print(f'Smoothed faces:\n{smoothed_faces}')
+    
+    log_and_print(f'\nSmoothed faces separated:')
+    for face in smoothed_faces:
+        log_and_print(f'{face}')
+        for face_vertex in smoothed_faces[face]:
+            log_and_print(f'    {face_vertex}')
+            
+    for face in smoothed_faces:
+        for face_vertex in smoothed_faces[face]:
+            v_index, vt_index, vn_index = face_vertex
+            
+
+    #smoothed_faces = {
+    #'f': [face_vertex, face_vertex, face_vertex],
+    #}
+    #
+    #face_vertex = [v_index, vt_index, vn_index]
+    #
+    #face_pattern = re.compile(r'f\s+((\d+/\d+/\d+\s+)+\d+/\d+/\d+)', re.DOTALL)
+    #
+    #u_match = re.findall(uv_pattern, uaxis)
+    #            if u_match:
+    #                ux, uy, uz, u_shift, u_tex_scale = map(float, u_match)
+    
+
+    
+    #with open(obj_file_path, 'r') as f:
+    #    lines = [line.strip() for line in f.readlines()]
+    #    
+    #for line in lines:
+    #    if line.startswith('f ')
+    #        
+    #
+    #for line in lines:
+    #    if line.startswith('v '):
+    #        vertex_str = ' '.join(format(float(x), '.6f') for x in line[2:].split())
+    #        if vertex_str not in unique_vertices:
+    #            unique_vertices[vertex_str] = new_index
+    #            new_index += 1
+    #    elif line.startswith('f '):
+    #        vertex_parts = re.findall(r'(\d+/[\d/]*)', line)
+    #        updated_face = 'f'
+    #        for vp in vertex_parts:
+    #            vertex_idx, *other_indices = vp.split('/')
+    #            old_index = int(vertex_idx) - index_offset
+    #            vertex_str = ' '.join(format(float(x), '.6f') for x in lines[old_index][2:].split())
+    #            new_index = unique_vertices[vertex_str]
+    #
+    #            if remove_vn and current_smoothing_group not in ['0', 'off']:
+    #                updated_face += f' {new_index}/' + '/'.join(other_indices[:-1])
+    #            else:
+    #                updated_face += f' {new_index}/' + '/'.join(other_indices)
+    #        current_block.append(updated_face)
+    #    elif line.startswith('s '):
+    #        new_smoothing_group = line[2:].strip()
+    #        if new_smoothing_group != current_smoothing_group:
+    #            current_smoothing_group = new_smoothing_group
+    #            if current_block:
+    #                blocks.append(current_block)
+    #            current_block = [f's {current_smoothing_group}']
+    #            if last_group_name and not first_smoothing_group_for_last_group:
+    #                current_block.insert(0, f'g {last_group_name}_sg{current_smoothing_group}')
+    #            first_smoothing_group_for_last_group = False  # Reset the flag as we have encountered a smoothing group for this 'g' group
+    #    elif line.startswith('g '):
+    #        last_group_name = line[2:].strip()
+    #        first_smoothing_group_for_last_group = True  # Reset the flag as we have a new 'g' group
+    #        if current_block:
+    #            blocks.append(current_block)
+    #        current_block = [line.strip()]
+    #    elif line.startswith('usemtl '):
+    #        current_block.append(line.strip())
+    #    else:
+    #        other_lines.append(line.strip())
+    #
+    #if current_block:
+    #    blocks.append(current_block)
+    #
+    #with open(obj_file_path, 'w') as f:
+    #    for vertex_str, index in unique_vertices.items():
+    #        f.write(f'v {vertex_str}\n')
+    #    for line in other_lines:
+    #        f.write(f'{line}\n')
+    #    for block in blocks:
+    #        for line in block:
+    #            f.write(f'{line}\n')
     
 def main():
     # Assuming the VMF files are dragged onto the script
@@ -502,7 +628,9 @@ def main():
             merge_and_filter_objects_by_material_inplace(obj_file_path, "TOOLSNODRAW")
             
             # Same vertices weld
-            optimize_vertexes(obj_file_path, True)
+            optimize_vertexes(obj_file_path, False)
+            
+            sg_to_vn(obj_file_path)
 
 try:
     if __name__ == '__main__':
