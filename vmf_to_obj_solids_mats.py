@@ -5,6 +5,7 @@ import shutil
 from collections import defaultdict
 import numpy as np
 from numpy.linalg import lstsq
+from typing import Optional
 
 #
 # Unfinished shitty VMF to OBJ converter script. Converts only solid (brush) geometry;
@@ -416,21 +417,21 @@ def merge_and_filter_objects_by_material_inplace(obj_file_path, materials_to_rem
     # Replace the original OBJ file with the new content
     shutil.move(temp_file_path, obj_file_path)
 
-def optimize_vertexes(obj_file_path):
+def optimize_vertexes(obj_file_path: str, remove_vn: Optional[bool] = False):
     unique_vertices = {}
     blocks = []
     other_lines = []
-
     index_offset = 1
     new_index = 1
     current_block = []
+    current_smoothing_group = '0'  # Default smoothing group
 
     with open(obj_file_path, 'r') as f:
-        lines = f.readlines()
+        lines = [line.strip() for line in f.readlines()]
 
     for line in lines:
         if line.startswith('v '):
-            vertex_str = ' '.join(format(float(x), '.6f') for x in line[2:].strip().split())
+            vertex_str = ' '.join(format(float(x), '.6f') for x in line[2:].split())
             if vertex_str not in unique_vertices:
                 unique_vertices[vertex_str] = new_index
                 new_index += 1
@@ -440,11 +441,20 @@ def optimize_vertexes(obj_file_path):
             for vp in vertex_parts:
                 vertex_idx, *other_indices = vp.split('/')
                 old_index = int(vertex_idx) - index_offset
-                vertex_str = ' '.join(format(float(x), '.6f') for x in lines[old_index][2:].strip().split())
+                vertex_str = ' '.join(format(float(x), '.6f') for x in lines[old_index][2:].split())
                 new_index = unique_vertices[vertex_str]
-                updated_face += f' {new_index}/' + '/'.join(other_indices)
+
+                if remove_vn and current_smoothing_group not in ['0', 'off']:
+                    updated_face += f' {new_index}/' + '/'.join(other_indices[:-1])
+                else:
+                    updated_face += f' {new_index}/' + '/'.join(other_indices)
             current_block.append(updated_face)
-        elif line.startswith(('g ', 'usemtl ', 's ')):
+        elif line.startswith('s '):
+            current_smoothing_group = line[2:].strip()
+            if current_block:
+                blocks.append(current_block)
+            current_block = [f's {current_smoothing_group}']
+        elif line.startswith(('g ', 'usemtl ')):
             if current_block:
                 blocks.append(current_block)
             current_block = [line.strip()]
@@ -481,7 +491,7 @@ def main():
             merge_and_filter_objects_by_material_inplace(obj_file_path, "TOOLSNODRAW")
             
             # Same vertices weld
-            optimize_vertexes(obj_file_path)
+            optimize_vertexes(obj_file_path, True)
 
 try:
     if __name__ == '__main__':
