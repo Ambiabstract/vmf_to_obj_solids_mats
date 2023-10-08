@@ -425,6 +425,8 @@ def optimize_vertexes(obj_file_path: str, remove_vn: Optional[bool] = False):
     new_index = 1
     current_block = []
     current_smoothing_group = '0'  # Default smoothing group
+    last_group_name = None  # Last group name
+    first_smoothing_group_for_last_group = True  # Flag to check if it's the first smoothing group for the last 'g' group
 
     with open(obj_file_path, 'r') as f:
         lines = [line.strip() for line in f.readlines()]
@@ -450,14 +452,23 @@ def optimize_vertexes(obj_file_path: str, remove_vn: Optional[bool] = False):
                     updated_face += f' {new_index}/' + '/'.join(other_indices)
             current_block.append(updated_face)
         elif line.startswith('s '):
-            current_smoothing_group = line[2:].strip()
-            if current_block:
-                blocks.append(current_block)
-            current_block = [f's {current_smoothing_group}']
-        elif line.startswith(('g ', 'usemtl ')):
+            new_smoothing_group = line[2:].strip()
+            if new_smoothing_group != current_smoothing_group:
+                current_smoothing_group = new_smoothing_group
+                if current_block:
+                    blocks.append(current_block)
+                current_block = [f's {current_smoothing_group}']
+                if last_group_name and not first_smoothing_group_for_last_group:
+                    current_block.insert(0, f'g {last_group_name}_sg{current_smoothing_group}')
+                first_smoothing_group_for_last_group = False  # Reset the flag as we have encountered a smoothing group for this 'g' group
+        elif line.startswith('g '):
+            last_group_name = line[2:].strip()
+            first_smoothing_group_for_last_group = True  # Reset the flag as we have a new 'g' group
             if current_block:
                 blocks.append(current_block)
             current_block = [line.strip()]
+        elif line.startswith('usemtl '):
+            current_block.append(line.strip())
         else:
             other_lines.append(line.strip())
 
