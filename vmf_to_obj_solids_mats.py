@@ -415,6 +415,53 @@ def merge_and_filter_objects_by_material_inplace(obj_file_path, materials_to_rem
                 
     # Replace the original OBJ file with the new content
     shutil.move(temp_file_path, obj_file_path)
+
+def optimize_vertexes(obj_file_path):
+    unique_vertices = {}
+    blocks = []
+    other_lines = []
+
+    index_offset = 1
+    new_index = 1
+    current_block = []
+
+    with open(obj_file_path, 'r') as f:
+        lines = f.readlines()
+
+    for line in lines:
+        if line.startswith('v '):
+            vertex_str = ' '.join(format(float(x), '.6f') for x in line[2:].strip().split())
+            if vertex_str not in unique_vertices:
+                unique_vertices[vertex_str] = new_index
+                new_index += 1
+        elif line.startswith('f '):
+            vertex_parts = re.findall(r'(\d+/[\d/]*)', line)
+            updated_face = 'f'
+            for vp in vertex_parts:
+                vertex_idx, *other_indices = vp.split('/')
+                old_index = int(vertex_idx) - index_offset
+                vertex_str = ' '.join(format(float(x), '.6f') for x in lines[old_index][2:].strip().split())
+                new_index = unique_vertices[vertex_str]
+                updated_face += f' {new_index}/' + '/'.join(other_indices)
+            current_block.append(updated_face)
+        elif line.startswith(('g ', 'usemtl ', 's ')):
+            if current_block:
+                blocks.append(current_block)
+            current_block = [line.strip()]
+        else:
+            other_lines.append(line.strip())
+
+    if current_block:
+        blocks.append(current_block)
+
+    with open(obj_file_path, 'w') as f:
+        for vertex_str, index in unique_vertices.items():
+            f.write(f'v {vertex_str}\n')
+        for line in other_lines:
+            f.write(f'{line}\n')
+        for block in blocks:
+            for line in block:
+                f.write(f'{line}\n')
     
 def main():
     # Assuming the VMF files are dragged onto the script
@@ -432,6 +479,9 @@ def main():
             
             # Merge by materials
             merge_and_filter_objects_by_material_inplace(obj_file_path, "TOOLSNODRAW")
+            
+            # Same vertices weld
+            optimize_vertexes(obj_file_path)
 
 try:
     if __name__ == '__main__':
