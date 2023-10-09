@@ -517,25 +517,167 @@ def find_smoothed_faces(file_path):
 
     return smoothed_faces
 
+# Does not work and useless
+#def find_identical_vertices(obj_file_path, target_vertex_index):
+#    identical_vertex_indices = []
+#    target_vertex_value = None
+#
+#    with open(obj_file_path, 'r') as f:
+#        lines = f.readlines()
+#
+#    vertex_count = 0
+#    for i, line in enumerate(lines):
+#        line = line.strip()
+#        if line.startswith("v "):  # This line defines a vertex
+#            vertex_count += 1
+#            tokens = line.split()
+#            vertex_value = tuple(map(float, tokens[1:]))  # Extract x, y, z coordinates and convert them to float
+#
+#            if vertex_count == target_vertex_index:  # This is the target vertex
+#                target_vertex_value = vertex_value
+#
+#            if target_vertex_value and vertex_value == target_vertex_value:
+#                identical_vertex_indices.append(vertex_count)
+#
+#    return identical_vertex_indices
+
+def find_smoothed_vertices(file_path):
+    smoothed_vertices = {}
+    current_s = '0'  # Initialize with a value that excludes non-smoothed faces
+    global_vertices_count = 0
+
+    smoothed_faces = find_smoothed_faces(file_path)
+    
+    for face in smoothed_faces:
+        for face_vertex in smoothed_faces[face]:
+            for face_vertex in smoothed_faces[face]:
+                v_index, vt_index, vn_index = face_vertex
+                smoothed_vertices[v_index] = face, face_vertex
+    #log_and_print(f'smoothed_vertices:\n{smoothed_vertices}')
+    
+    return smoothed_vertices
+
+# Function to read a specific vertex from an OBJ file by index
+def read_vertex_from_obj(obj_file_path, vertex_number):
+    vertex_count = 0
+    vertex_value = None
+    
+    # Open the OBJ file and read line by line
+    with open(obj_file_path, 'r') as file:
+        for line in file:
+            # Lines that define vertices start with 'v'
+            if line.startswith('v '):
+                vertex_count += 1
+                
+                # If the current vertex is the one we are looking for, store its value
+                if vertex_count == vertex_number:
+                    vertex_value = line.strip().split(' ')[1:]
+                    break
+                    
+    if vertex_value is None:
+        return "Vertex not found."
+    
+    return ' '.join(vertex_value)
+
 # Smoothing groups to vertex normals
 def sg_to_vn(obj_file_path):
     smoothed_faces = find_smoothed_faces(obj_file_path) # Vocab with faces and vertexes
+    smoothed_vertices = find_smoothed_vertices(obj_file_path)
+    vertex_normals = {}
     
-    smoothed_vertices = {}
-    
-    #log_and_print(f'Smoothed faces:\n{smoothed_faces}')
-    
-    log_and_print(f'\nSmoothed faces separated:')
-    for face in smoothed_faces:
-        log_and_print(f'{face}')
-        for face_vertex in smoothed_faces[face]:
-            log_and_print(f'    {face_vertex}')
+    #log_and_print(f'\nSmoothed faces separated:')
+    #for face in smoothed_faces:
+    #    log_and_print(f'{face}')
+    #    for face_vertex in smoothed_faces[face]:
+    #        log_and_print(f'    {face_vertex}')
+    #        
+    #for face in smoothed_faces:
+    #    for face_vertex in smoothed_faces[face]:
+    #        v_index, vt_index, vn_index = face_vertex
             
-    for face in smoothed_faces:
-        for face_vertex in smoothed_faces[face]:
-            v_index, vt_index, vn_index = face_vertex
+    #log_and_print(f'smoothed_vertices:\n{smoothed_vertices}')
+    
+    #log_and_print(f'smoothed_faces: {smoothed_faces}')
+    for face, vertices in smoothed_faces.items():
+        #log_and_print(f'face: {face}')
+        #log_and_print(f'vertices: {vertices}')
+        for vertex_data in vertices:
+            v, vt, vn = vertex_data
+            #log_and_print(f'v: {v}')
+            #log_and_print(f'vt: {vt}')
+            #log_and_print(f'vn: {vn}')
+            vertex_key = f'v_{v}'
             
-
+            # Initialize the list for this vertex if it's not already in the dictionary
+            if vertex_key not in vertex_normals:
+                vertex_normals[vertex_key] = []
+            
+            vertex_normals[vertex_key].append(vn)
+            
+    log_and_print(f'vertex_normals: {vertex_normals}')
+    
+    #for face in smoothed_faces:
+    #    for face_vertex in smoothed_faces[face]:
+    #        for face_vertex in smoothed_faces[face]:
+    #            v_index, vt_index, vn_index = face_vertex
+    
+    #log_and_print(f'smoothed_vertices:')
+    #for vertex_index in smoothed_vertices:
+        #log_and_print(f'{vertex_index}')
+        
+        #find_identical_vertices(obj_file_path, vertex_index):
+        #log_and_print(f'Same vertices:')
+        #log_and_print(f'    {ident_v}')
+    
+    #for vertex_index in smoothed_vertices:
+    #    for content in smoothed_vertices[vertex_index]:
+    #        log_and_print(f'vertex content: {content}')
+    #        #face, face_vertex = content
+    #        #log_and_print(f'vertex: {face_vertex}')
+    #find_identical_vertices(obj_file_path, target_vertex_index)
+    
+    
+        #for vertex in smoothed_vertices:
+    #    log_and_print(f'vertex {vertex}:')
+    #    vertex_content = smoothed_vertices[vertex]:
+    #        log_and_print(f'    {vertex_content}:')
+    
+    #with open(file_path, 'r') as f:
+    #    for line in f:
+    #        line = line.strip()
+    #        tokens = line.split()
+    #        if len(tokens) == 0:
+    #            continue
+    #
+    #        # Processing 's' string
+    #        if tokens[0] == 's':
+    #            current_s = tokens[1]
+    #        
+    #        # Processing 'f' string
+    #        elif tokens[0] == 'f':
+    #            global_face_count += 1
+    #            #log_and_print(f'\nglobal_face_count:{global_face_count}\n')
+    #            #log_and_print(f'\ncurrent_s:{current_s}\n')
+    #            
+    #            if current_s not in {'0', 'off'}:
+    #                face_key = f'f_{global_face_count}'
+    #                face_vertices = []
+    #                for face_data in tokens[1:]:
+    #                    v_index, vt_index, vn_index = map(int, face_data.split('/'))
+    #                    face_vertex = [v_index, vt_index, vn_index]
+    #                    face_vertices.append(face_vertex)
+    #                smoothed_faces[face_key] = face_vertices
+    #
+    #return smoothed_faces
+    
+    
+    
+    
+    
+    
+    
+    
+    
     #smoothed_faces = {
     #'f': [face_vertex, face_vertex, face_vertex],
     #}
@@ -629,6 +771,8 @@ def main():
             
             # Same vertices weld
             optimize_vertexes(obj_file_path, False)
+            
+            #find_smoothed_vertices(obj_file_path)
             
             sg_to_vn(obj_file_path)
 
