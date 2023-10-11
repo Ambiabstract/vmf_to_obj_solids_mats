@@ -11,7 +11,7 @@ from typing import Optional
 # Unfinished shitty VMF to OBJ converter script. Converts only solid (brush) geometry;
 # Objects in OBJ are grouped by materials.
 #
-# Usage: install Python, drag-n-drop VMF(s) to this script.
+# Usage: install Python, install numpy, drag-n-drop VMF(s) to this script.
 # You will get the OBJ files in the same folder where the VMFs are located.
 #
 # Features:
@@ -173,11 +173,22 @@ def get_vtf_path(side_content, vmf_path):
     gameinfo_path = None
     vtf_path = None
     
+    gameinfo_found = False
     for dirpath, dirnames, filenames in os.walk(os.path.dirname(os.path.dirname(vmf_path))):
-        #log_and_print(f"dirpath: {dirpath}\n")
         if "gameinfo.txt" in filenames:
-            gameinfo_path = os.path.join(dirpath)
+            gameinfo_path = dirpath
+            gameinfo_found = True
             break
+    
+    if not gameinfo_found:
+        for dirpath, dirnames, filenames in os.walk(os.path.dirname(os.path.dirname(os.path.dirname(vmf_path)))):
+            if "gameinfo.txt" in filenames:
+                gameinfo_path = dirpath
+                gameinfo_found = True
+                break
+    
+    if not gameinfo_found:
+        log_and_print("Cant find gameinfo!!!")
             
     materials_path = gameinfo_path + "/materials"
     
